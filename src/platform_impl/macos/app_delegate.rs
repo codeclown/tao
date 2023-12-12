@@ -2,10 +2,15 @@
 // Copyright 2021-2023 Tauri Programme within The Commons Conservancy
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{platform::macos::ActivationPolicy, platform_impl::platform::app_state::AppState};
+use crate::{
+  event::Event, platform::macos::ActivationPolicy, platform_impl::platform::app_state::AppState,
+  platform_impl::platform::event::EventWrapper,
+};
 
+use cocoa::appkit::NSApplicationTerminateReply;
 use cocoa::base::id;
 use cocoa::foundation::NSString;
+use cocoa::foundation::NSUInteger;
 use objc::{
   declare::ClassDecl,
   runtime::{Class, Object, Sel, BOOL},
@@ -45,6 +50,10 @@ lazy_static! {
     decl.add_method(
       sel!(applicationDidFinishLaunching:),
       did_finish_launching as extern "C" fn(&Object, Sel, id),
+    );
+    decl.add_method(
+      sel!(applicationShouldTerminate:),
+      application_should_terminate as extern "C" fn(&Object, Sel, id) -> NSUInteger,
     );
     decl.add_method(
       sel!(applicationWillTerminate:),
@@ -99,6 +108,19 @@ extern "C" fn did_finish_launching(this: &Object, _: Sel, _: id) {
   trace!("Triggered `applicationDidFinishLaunching`");
   AppState::launched(this);
   trace!("Completed `applicationDidFinishLaunching`");
+}
+
+extern "C" fn application_should_terminate(_: &Object, _: Sel, _: id) -> NSUInteger {
+  trace!("Triggered `applicationShouldTerminate`");
+
+  dbg!("Queueing event");
+  let event = Event::ApplicationShouldTerminate {};
+  AppState::queue_event(EventWrapper::StaticEvent(event));
+  dbg!("Queued event");
+
+  let return_value: u64 = NSApplicationTerminateReply::NSTerminateLater as u64;
+  trace!("Completed `applicationShouldTerminate`");
+  return return_value;
 }
 
 extern "C" fn application_will_terminate(_: &Object, _: Sel, _: id) {

@@ -136,6 +136,8 @@ pub enum Event<'a, T: 'static> {
 
   /// Emitted when the app is open by external resources, like opening a file or deeplink.
   Opened { urls: Vec<url::Url> },
+
+  ApplicationShouldTerminate,
 }
 
 impl<T: Clone> Clone for Event<'static, T> {
@@ -159,6 +161,7 @@ impl<T: Clone> Clone for Event<'static, T> {
       Suspended => Suspended,
       Resumed => Resumed,
       Opened { urls } => Opened { urls: urls.clone() },
+      ApplicationShouldTerminate => ApplicationShouldTerminate,
     }
   }
 }
@@ -178,6 +181,7 @@ impl<'a, T> Event<'a, T> {
       Suspended => Ok(Suspended),
       Resumed => Ok(Resumed),
       Opened { urls } => Ok(Opened { urls }),
+      ApplicationShouldTerminate => Ok(ApplicationShouldTerminate),
     }
   }
 
@@ -199,6 +203,7 @@ impl<'a, T> Event<'a, T> {
       Suspended => Some(Suspended),
       Resumed => Some(Resumed),
       Opened { urls } => Some(Opened { urls }),
+      ApplicationShouldTerminate => Some(ApplicationShouldTerminate),
     }
   }
 }
